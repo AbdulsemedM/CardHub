@@ -124,7 +124,7 @@ export function Header({ user }: { user: User }) {
                   className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"
                   onClick={() => {
                     setIsDropdownOpen(false);
-                    // Add settings navigation here if needed
+                    router.push('/preferences');
                   }}
                 >
                   <Settings className="h-4 w-4 text-slate-500" />

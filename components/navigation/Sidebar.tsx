@@ -62,7 +62,7 @@ const settingsItems: NavItem[] = [
   },
   {
     title: 'Preferences',
-    href: '#',
+    href: '/preferences',
     icon: Settings,
     roles: ['branch_officer', 'operations', 'ops_head', 'admin'],
   },
