@@ -82,7 +82,9 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const stats = await getDashboardStats(user.role);
+  const userRole = typeof user.role === 'object' ? user.role.roleName : user.role;
+  const roleForStats = userRole === 'BRANCH_USER' ? 'branch_officer' : userRole === 'OPERATIONS' ? 'operations' : userRole === 'OPERATIONS_HEAD' ? 'ops_head' : userRole;
+  const stats = await getDashboardStats(roleForStats);
   const requests = requestsData as TravelCardRequest[];
 
   // Get recent activity (last 4 activities)

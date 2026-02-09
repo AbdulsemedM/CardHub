@@ -14,11 +14,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/EmptyState';
-import type { TravelCardRequest } from '@/lib/types/request';
+import type { TravelCardRequest, ApiTravelCardRequest } from '@/lib/types/request';
 import { Search, ChevronDown, Filter, Settings } from 'lucide-react';
 
 interface RequestTableProps {
-  requests: TravelCardRequest[];
+  requests: TravelCardRequest[] | ApiTravelCardRequest[];
+  onRefresh?: () => void;
 }
 
 const statusLabels: Record<string, string> = {
@@ -27,6 +28,15 @@ const statusLabels: Record<string, string> = {
   approved: 'Approved',
   rejected: 'Rejected',
   escalated: 'Escalated',
+  PENDING_BRANCH_REVIEW: 'Pending Branch Review',
+  PENDING_OPERATIONS_REVIEW: 'Pending Operations',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  CARD_REQUESTED: 'Card Requested',
+  PRINTING: 'Printing',
+  READY: 'Ready',
+  CARD_COLLECTED: 'Collected',
+  COMPLETED: 'Completed',
 };
 
 const getStatusBadgeStyle = (status: string) => {
@@ -84,8 +94,11 @@ const formatDate = (dateString: string) => {
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 };
 
-const calculateBudget = (request: TravelCardRequest): number => {
+const calculateBudget = (request: any): number => {
   // Estimate budget based on account info or use a default calculation
+  if ('requestedAmount' in request) {
+    return request.requestedAmount;
+  }
   if (request.accountInfo?.sixMonthAverage) {
     // Use 34% of six month average as estimated budget (example calculation)
     return request.accountInfo.sixMonthAverage * 0.34;
@@ -94,7 +107,11 @@ const calculateBudget = (request: TravelCardRequest): number => {
   return 2400.0;
 };
 
-export function RequestTable({ requests }: RequestTableProps) {
+const getRequestId = (request: any): string => {
+  return ('travelCardId' in request) ? String(request.travelCardId) : request.id;
+};
+
+export function RequestTable({ requests, onRefresh }: RequestTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -119,7 +136,7 @@ export function RequestTable({ requests }: RequestTableProps) {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRows(new Set(paginatedRequests.map((r) => r.id)));
+      setSelectedRows(new Set(paginatedRequests.map((r) => getRequestId(r))));
     } else {
       setSelectedRows(new Set());
     }
@@ -188,7 +205,7 @@ export function RequestTable({ requests }: RequestTableProps) {
                 <input
                   type="checkbox"
                   className="rounded border-slate-300"
-                  checked={paginatedRequests.length > 0 && paginatedRequests.every((r) => selectedRows.has(r.id))}
+                  checked={paginatedRequests.length > 0 && paginatedRequests.every((r) => selectedRows.has(getRequestId(r)))}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                 />
               </TableHead>
@@ -211,47 +228,50 @@ export function RequestTable({ requests }: RequestTableProps) {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedRequests.map((request) => (
-                <TableRow key={request.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      className="rounded border-slate-300"
-                      checked={selectedRows.has(request.id)}
-                      onChange={(e) => handleSelectRow(request.id, e.target.checked)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-full ${getAvatarColor(request.applicantName)} flex items-center justify-center text-white font-semibold text-sm`}>
-                        {getInitials(request.applicantName)}
+              paginatedRequests.map((request) => {
+                const requestId = getRequestId(request);
+                return (
+                  <TableRow key={requestId} className="border-b border-slate-100 hover:bg-slate-50">
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300"
+                        checked={selectedRows.has(requestId)}
+                        onChange={(e) => handleSelectRow(requestId, e.target.checked)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className={`h-10 w-10 rounded-full ${getAvatarColor(request.applicantName)} flex items-center justify-center text-white font-semibold text-sm`}>
+                          {getInitials(request.applicantName)}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-900">{request.applicantName}</div>
+                          <div className="text-sm text-slate-600">{request.applicantEmail}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-slate-900">{request.applicantName}</div>
-                        <div className="text-sm text-slate-600">{request.applicantEmail}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-slate-900">{request.destination}</TableCell>
-                  <TableCell className="text-slate-900">{formatDate(request.travelDate)}</TableCell>
-                  <TableCell className="text-slate-900 font-medium">
-                    ${calculateBudget(request).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`${getStatusBadgeStyle(request.status)} flex items-center gap-1.5 w-fit`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${getStatusDotColor(request.status)}`}></span>
-                      {statusLabels[request.status] || request.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Link href={`/requests/${request.id}`}>
-                      <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
-                        View
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell className="text-slate-900">{request.destination}</TableCell>
+                    <TableCell className="text-slate-900">{formatDate(request.travelDate)}</TableCell>
+                    <TableCell className="text-slate-900 font-medium">
+                      ${calculateBudget(request).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${getStatusBadgeStyle(request.status)} flex items-center gap-1.5 w-fit`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${getStatusDotColor(request.status)}`}></span>
+                        {statusLabels[request.status] || request.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/requests/${requestId}`}>
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-primary/10">
+                          View
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

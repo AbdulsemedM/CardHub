@@ -7,31 +7,33 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { username, password, access_token } = body;
+    const { identifier, password, token } = body;
 
-    if (!username || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
-        { success: false, error: 'Username and password are required' },
+        { success: false, error: 'Identifier and password are required' },
         { status: 400 }
       );
     }
 
-    // If access_token is provided, it means frontend already authenticated with backend
+    // If token is provided, it means frontend already authenticated with backend
     // Just create the session cookie
-    if (access_token) {
+    if (token) {
+      // We'll need the full staff info from the token or passed separately
+      // For now, create a basic session
       const session = {
         user: {
-          id: 'admin-1',
-          username,
-          email: username,
-          name: 'Admin User',
-          role: 'admin',
+          id: identifier,
+          username: identifier,
+          email: identifier,
+          name: identifier,
+          role: 'branch_user', // This will be overridden by the actual role
           isActive: true,
           createdAt: new Date().toISOString(),
         },
-        token: access_token,
+        token,
         expiresAt: Date.now() + SESSION_DURATION,
-        userType: 'admin',
+        userType: 'bank_staff',
       };
 
       const cookieStore = await cookies();
@@ -45,21 +47,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         user: session.user,
-        userType: 'admin',
+        userType: 'bank_staff',
       });
     }
 
-    // If no access_token, this is fallback/legacy behavior
+    // If no token, this is fallback/legacy behavior
     return NextResponse.json(
       { success: false, error: 'Invalid request' },
       { status: 400 }
     );
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: 'An error occurred during login' },
-      { status: 500 }
+      { success: false, error: error.message || 'Login failed' },
+      { status: 401 }
     );
   }
 }
-
-

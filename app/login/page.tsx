@@ -6,10 +6,12 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { User, Lock, Check, ArrowRight, Info } from 'lucide-react';
+import { User, Lock, Check, ArrowRight, Info, Building2, UserCircle } from 'lucide-react';
+import { loginAdmin, loginBankStaff } from '@/lib/services/auth-service';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [loginType, setLoginType] = useState<'admin' | 'staff'>('staff');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -100,23 +102,56 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+      if (loginType === 'admin') {
+        // Call backend directly for admin login
+        const response = await loginAdmin(username, password);
+        
+        // Store session info for server-side auth
+        await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            username, 
+            password,
+            access_token: response.access_token 
+          }),
+        });
 
-      const data = await response.json();
-
-      if (data.success) {
         toast.success('Login successful');
-        router.push('/dashboard');
+        router.push('/admin/users');
         router.refresh();
       } else {
-        toast.error(data.error || 'Login failed');
+        // Call backend directly for staff login
+        const response = await loginBankStaff(username, password);
+        
+        // Store session info for server-side auth
+        await fetch('/api/auth/staff-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            identifier: username, 
+            password,
+            token: response.token 
+          }),
+        });
+
+        toast.success('Login successful');
+        
+        // Route based on staff role
+        const role = response.role;
+        if (role === 'BRANCH_USER') {
+          router.push('/requests');
+        } else if (role === 'OPERATIONS') {
+          router.push('/operations');
+        } else if (role === 'OPERATIONS_HEAD') {
+          router.push('/ops-head/pending');
+        } else {
+          router.push('/dashboard');
+        }
+        router.refresh();
       }
-    } catch (error) {
-      toast.error('An error occurred during login');
+    } catch (error: any) {
+      toast.error(error.message || 'An error occurred during login');
     } finally {
       setLoading(false);
     }
@@ -189,17 +224,45 @@ export default function LoginPage() {
             Welcome back! Please enter your details to access your dashboard.
           </p>
 
+          {/* Login Type Tabs */}
+          <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setLoginType('staff')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-all ${
+                loginType === 'staff'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="h-4 w-4" />
+              Bank Staff
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType('admin')}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium transition-all ${
+                loginType === 'admin'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserCircle className="h-4 w-4" />
+              Admin
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium text-slate-700">
-                Username
+                {loginType === 'admin' ? 'Username' : 'Email or Username'}
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Enter your username"
+                  placeholder={loginType === 'admin' ? 'Enter your username' : 'Enter your email or username'}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -207,6 +270,11 @@ export default function LoginPage() {
                   className="pl-10 h-12"
                 />
               </div>
+              {loginType === 'staff' && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Use your Active Directory credentials
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -264,12 +332,17 @@ export default function LoginPage() {
               <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="flex-1 text-sm text-slate-700">
                 <p className="font-semibold mb-2">Demo Credentials:</p>
-                <div className="space-y-1 text-xs">
-                  <p>Branch Officer: <span className="font-mono">branch.officer1</span> / any password</p>
-                  <p>Operations: <span className="font-mono">operations1</span> / any password</p>
-                  <p>Ops Head: <span className="font-mono">ops.head</span> / any password</p>
-                  <p>Admin: <span className="font-mono">admin</span> / any password</p>
-                </div>
+                {loginType === 'staff' ? (
+                  <div className="space-y-1 text-xs">
+                    <p>Branch User: <span className="font-mono">jdoe</span> / any password</p>
+                    <p>Operations: <span className="font-mono">mchen</span> / any password</p>
+                    <p>Ops Head: <span className="font-mono">rwilson</span> / any password</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-xs">
+                    <p>Admin: <span className="font-mono">admin</span> / any password</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

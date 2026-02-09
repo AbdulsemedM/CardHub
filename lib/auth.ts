@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import type { User, AuthSession, UserRole } from './types/user';
+import type { User, BankStaff, AuthSession, UserRole } from './types/user';
 import usersData from './mock-data/users.json';
 
 const SESSION_COOKIE = 'travler-card-session';
@@ -29,6 +29,7 @@ export async function login(username: string, password: string): Promise<{ succe
     user,
     token: `mock-token-${user.id}-${Date.now()}`,
     expiresAt: Date.now() + SESSION_DURATION,
+    userType: user.role === 'admin' ? 'admin' : 'bank_staff',
   };
 
   const cookieStore = await cookies();
@@ -70,23 +71,34 @@ export async function getSession(): Promise<AuthSession | null> {
   }
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+export async function getCurrentUser(): Promise<User | BankStaff | null> {
   const session = await getSession();
   return session?.user ?? null;
 }
 
-export async function requireAuth(): Promise<User> {
+export async function requireAuth(): Promise<User | BankStaff> {
   const user = await getCurrentUser();
   if (!user) {
     const { redirect } = await import('next/navigation');
     redirect('/login');
   }
-  return user;
+  return user!;
 }
 
-export async function requireRole(allowedRoles: UserRole[]): Promise<User> {
+// Map StaffRole to UserRole for role checks
+const STAFF_ROLE_TO_USER_ROLE: Record<string, UserRole> = {
+  BRANCH_USER: 'branch_officer',
+  OPERATIONS: 'operations',
+  OPERATIONS_HEAD: 'ops_head',
+  ADMIN: 'admin',
+};
+
+export async function requireRole(allowedRoles: UserRole[]): Promise<User | BankStaff> {
   const user = await requireAuth();
-  if (!allowedRoles.includes(user.role)) {
+  const role: UserRole = 'role' in user && typeof user.role === 'object'
+    ? (STAFF_ROLE_TO_USER_ROLE[user.role.roleName] ?? user.role.roleName as UserRole)
+    : user.role;
+  if (!allowedRoles.includes(role)) {
     const { redirect } = await import('next/navigation');
     redirect('/dashboard');
   }

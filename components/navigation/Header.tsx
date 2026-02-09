@@ -1,25 +1,39 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { User } from '@/lib/types/user';
+import type { User, BankStaff } from '@/lib/types/user';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Bell, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function Header({ user }: { user: User }) {
+const roleLabels: Record<string, string> = {
+  branch_officer: 'Branch Officer',
+  operations: 'Operations',
+  ops_head: 'Approver',
+  admin: 'Admin',
+  BRANCH_USER: 'Branch User',
+  OPERATIONS: 'Operations',
+  OPERATIONS_HEAD: 'Operations Head',
+  CARD_ISSUANCE: 'Card Issuance',
+  PRINTING: 'Printing',
+  ADMIN: 'Admin',
+};
+
+function getDisplayUser(user: User | BankStaff) {
+  const name = 'name' in user ? user.name : user.fullName;
+  const role = typeof user.role === 'object' ? user.role.roleName : user.role;
+  const branch = 'branch' in user ? (user as User).branch : (user as BankStaff).branchName;
+  return { name, role, branch, email: user.email };
+}
+
+export function Header({ user }: { user: User | BankStaff }) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
-
-  const roleLabels: Record<string, string> = {
-    branch_officer: 'Branch Officer',
-    operations: 'Operations',
-    ops_head: 'Approver',
-    admin: 'Admin',
-  };
+  const display = getDisplayUser(user);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -67,12 +81,12 @@ export function Header({ user }: { user: User }) {
       <div className="flex items-center gap-4">
         <Bell className="h-5 w-5 text-slate-600 cursor-pointer hover:text-slate-900" />
         <Badge className="bg-primary text-primary-foreground px-3 py-1">
-          {roleLabels[user.role] || user.role}
+          {roleLabels[display.role] || display.role}
         </Badge>
         <div className="flex flex-col items-end">
-          <span className="text-sm font-medium text-slate-900">{user.name}</span>
-          {user.branch && (
-            <span className="text-xs text-slate-600">{user.branch}</span>
+          <span className="text-sm font-medium text-slate-900">{display.name}</span>
+          {display.branch && (
+            <span className="text-xs text-slate-600">{display.branch}</span>
           )}
         </div>
         <div className="relative">
@@ -81,7 +95,7 @@ export function Header({ user }: { user: User }) {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold cursor-pointer hover:opacity-90 transition-opacity"
           >
-            {user.name.charAt(0).toUpperCase()}
+            {display.name.charAt(0).toUpperCase()}
           </div>
           
           {isDropdownOpen && (
@@ -92,19 +106,19 @@ export function Header({ user }: { user: User }) {
               <div className="p-4 border-b border-slate-200">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-lg">
-                    {user.name.charAt(0).toUpperCase()}
+                    {display.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-900 truncate">{user.name}</p>
-                    <p className="text-sm text-slate-600 truncate">{user.email}</p>
-                    {user.branch && (
-                      <p className="text-xs text-slate-500 mt-0.5">{user.branch}</p>
+                    <p className="font-semibold text-slate-900 truncate">{display.name}</p>
+                    <p className="text-sm text-slate-600 truncate">{display.email}</p>
+                    {display.branch && (
+                      <p className="text-xs text-slate-500 mt-0.5">{display.branch}</p>
                     )}
                   </div>
                 </div>
                 <div className="mt-3">
                   <Badge className="bg-primary/10 text-primary border-0 text-xs">
-                    {roleLabels[user.role] || user.role}
+                    {roleLabels[display.role] || display.role}
                   </Badge>
                 </div>
               </div>

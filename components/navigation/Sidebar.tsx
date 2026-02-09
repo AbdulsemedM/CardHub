@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import type { User } from '@/lib/types/user';
+import type { User, BankStaff } from '@/lib/types/user';
 import {
   LayoutDashboard,
   FolderOpen,
@@ -13,9 +13,16 @@ import {
   Users,
   Settings,
   Headphones,
+  Shield,
+  AlertTriangle,
+  CreditCard,
+  Printer,
+  FileText,
+  UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getUserRole } from '@/lib/services/auth-service';
 
 interface NavItem {
   title: string;
@@ -25,54 +32,213 @@ interface NavItem {
   badge?: number;
 }
 
-const navItems: NavItem[] = [
-  {
-    title: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-    roles: ['branch_officer', 'operations', 'ops_head', 'admin'],
-  },
-  {
-    title: 'Applications',
-    href: '/requests',
-    icon: FolderOpen,
-    roles: ['branch_officer', 'operations', 'ops_head', 'admin'],
-    badge: 12,
-  },
-  {
-    title: 'My Approvals',
-    href: '/ops-head/pending',
-    icon: CheckCircle2,
-    roles: ['ops_head', 'operations', 'admin'],
-  },
-  {
-    title: 'Reports',
-    href: '/reports',
-    icon: BarChart3,
-    roles: ['operations', 'ops_head', 'admin'],
-  },
-];
+// Helper to normalize role for comparison
+function normalizeRole(role: string): string {
+  // Handle both legacy and new role formats
+  const roleMap: Record<string, string> = {
+    'branch_officer': 'BRANCH_USER',
+    'operations': 'OPERATIONS',
+    'ops_head': 'OPERATIONS_HEAD',
+    'admin': 'ADMIN',
+  };
+  return roleMap[role.toLowerCase()] || role.toUpperCase();
+}
+
+function getNavItems(userRole: string): NavItem[] {
+  const normalized = normalizeRole(userRole);
+  
+  // Admin menu
+  if (normalized === 'ADMIN') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['ADMIN'],
+      },
+      {
+        title: 'Bank Staff',
+        href: '/admin/users',
+        icon: UserCog,
+        roles: ['ADMIN'],
+      },
+      {
+        title: 'Audit Logs',
+        href: '/admin/audit-logs',
+        icon: FileText,
+        roles: ['ADMIN'],
+      },
+    ];
+  }
+  
+  // Branch User menu
+  if (normalized === 'BRANCH_USER') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['BRANCH_USER'],
+      },
+      {
+        title: 'Pending Reviews',
+        href: '/requests',
+        icon: FolderOpen,
+        roles: ['BRANCH_USER'],
+      },
+      {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+        roles: ['BRANCH_USER'],
+      },
+    ];
+  }
+  
+  // Operations menu
+  if (normalized === 'OPERATIONS') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['OPERATIONS'],
+      },
+      {
+        title: 'Pending Reviews',
+        href: '/operations',
+        icon: Shield,
+        roles: ['OPERATIONS'],
+      },
+      {
+        title: 'All Operations',
+        href: '/operations/all',
+        icon: FolderOpen,
+        roles: ['OPERATIONS'],
+      },
+      {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+        roles: ['OPERATIONS'],
+      },
+    ];
+  }
+  
+  // Operations Head menu
+  if (normalized === 'OPERATIONS_HEAD') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['OPERATIONS_HEAD'],
+      },
+      {
+        title: 'Escalated Items',
+        href: '/ops-head/pending',
+        icon: AlertTriangle,
+        roles: ['OPERATIONS_HEAD'],
+      },
+      {
+        title: 'All Reviews',
+        href: '/operations',
+        icon: Shield,
+        roles: ['OPERATIONS_HEAD'],
+      },
+      {
+        title: 'Reports',
+        href: '/reports',
+        icon: BarChart3,
+        roles: ['OPERATIONS_HEAD'],
+      },
+    ];
+  }
+  
+  // Card Issuance menu
+  if (normalized === 'CARD_ISSUANCE') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['CARD_ISSUANCE'],
+      },
+      {
+        title: 'Approved Requests',
+        href: '/card-issuance',
+        icon: CreditCard,
+        roles: ['CARD_ISSUANCE'],
+      },
+      {
+        title: 'Card Tracking',
+        href: '/card-issuance/tracking',
+        icon: FolderOpen,
+        roles: ['CARD_ISSUANCE'],
+      },
+    ];
+  }
+  
+  // Printing menu
+  if (normalized === 'PRINTING') {
+    return [
+      {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutDashboard,
+        roles: ['PRINTING'],
+      },
+      {
+        title: 'Cards to Print',
+        href: '/printing',
+        icon: Printer,
+        roles: ['PRINTING'],
+      },
+      {
+        title: 'Ready Cards',
+        href: '/printing/ready',
+        icon: CheckCircle2,
+        roles: ['PRINTING'],
+      },
+    ];
+  }
+  
+  // Default menu (fallback)
+  return [
+    {
+      title: 'Dashboard',
+      href: '/dashboard',
+      icon: LayoutDashboard,
+      roles: [normalized],
+    },
+  ];
+}
 
 const settingsItems: NavItem[] = [
-  {
-    title: 'Users',
-    href: '/admin/users',
-    icon: Users,
-    roles: ['admin'],
-  },
   {
     title: 'Preferences',
     href: '/preferences',
     icon: Settings,
-    roles: ['branch_officer', 'operations', 'ops_head', 'admin'],
+    roles: ['BRANCH_USER', 'OPERATIONS', 'OPERATIONS_HEAD', 'CARD_ISSUANCE', 'PRINTING', 'ADMIN'],
   },
 ];
 
-export function Sidebar({ user }: { user: User }) {
-  const pathname = usePathname();
+function getRoleFromUser(user: User | BankStaff): string {
+  return typeof user.role === 'object' ? user.role.roleName : user.role;
+}
 
-  const filteredNavItems = navItems.filter((item) => item.roles.includes(user.role));
-  const filteredSettingsItems = settingsItems.filter((item) => item.roles.includes(user.role));
+export function Sidebar({ user }: { user: User | BankStaff }) {
+  const pathname = usePathname();
+  const userRole = getRoleFromUser(user);
+  
+  // Get actual role from localStorage or user object
+  const currentRole = getUserRole() || userRole;
+  const normalized = normalizeRole(currentRole);
+  
+  const navItemsForRole = getNavItems(currentRole);
+  const filteredSettingsItems = settingsItems.filter((item) => 
+    item.roles.includes(normalized) || item.roles.includes(userRole)
+  );
 
   return (
     <aside className="flex w-64 flex-col border-r border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
@@ -87,7 +253,7 @@ export function Sidebar({ user }: { user: User }) {
         <h1 className="text-base font-bold text-slate-900">TravelPortal</h1>
       </div>
       <nav className="flex-1 space-y-1 p-4">
-        {filteredNavItems.map((item) => {
+        {navItemsForRole.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (

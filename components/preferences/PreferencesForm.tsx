@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import type { User } from '@/lib/types/user';
+import type { User, BankStaff } from '@/lib/types/user';
 import { Lock, Bell, Shield, Key, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PreferencesFormProps {
-  user: User;
+  user: User | BankStaff;
 }
 
 const roleLabels: Record<string, string> = {
@@ -19,6 +19,12 @@ const roleLabels: Record<string, string> = {
   operations: 'Operations',
   ops_head: 'Operations Head',
   admin: 'Administrator',
+  BRANCH_USER: 'Branch User',
+  OPERATIONS: 'Operations',
+  OPERATIONS_HEAD: 'Operations Head',
+  CARD_ISSUANCE: 'Card Issuance',
+  PRINTING: 'Printing',
+  ADMIN: 'Admin',
 };
 
 const departmentOptions = [
@@ -30,12 +36,20 @@ const departmentOptions = [
   'Administration',
 ];
 
+function getDisplayName(user: User | BankStaff): string {
+  return 'name' in user ? user.name : user.fullName;
+}
+function getDisplayRole(user: User | BankStaff): string {
+  const role = typeof user.role === 'object' ? user.role.roleName : user.role;
+  return roleLabels[role] || role;
+}
+
 export function PreferencesForm({ user }: PreferencesFormProps) {
   const [formData, setFormData] = useState({
-    fullName: user.name,
+    fullName: getDisplayName(user),
     email: user.email,
     department: 'Travel Management',
-    role: roleLabels[user.role] || user.role,
+    role: getDisplayRole(user),
   });
 
   const [securityData, setSecurityData] = useState({
@@ -102,10 +116,10 @@ export function PreferencesForm({ user }: PreferencesFormProps) {
 
   const handleCancel = () => {
     setFormData({
-      fullName: user.name,
+      fullName: getDisplayName(user),
       email: user.email,
       department: 'Travel Management',
-      role: roleLabels[user.role] || user.role,
+      role: getDisplayRole(user),
     });
     setSecurityData({
       currentPassword: '',
@@ -140,12 +154,12 @@ export function PreferencesForm({ user }: PreferencesFormProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-start gap-4">
-            <div className={`h-20 w-20 rounded-full ${getAvatarColor(user.name)} flex items-center justify-center text-white font-semibold text-2xl`}>
-              {getInitials(user.name)}
+            <div className={`h-20 w-20 rounded-full ${getAvatarColor(getDisplayName(user))} flex items-center justify-center text-white font-semibold text-2xl`}>
+              {getInitials(getDisplayName(user))}
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-slate-900 text-lg">{user.name}</p>
-              <p className="text-sm text-slate-600 mt-1">{roleLabels[user.role] || user.role}</p>
+              <p className="font-semibold text-slate-900 text-lg">{getDisplayName(user)}</p>
+              <p className="text-sm text-slate-600 mt-1">{getDisplayRole(user)}</p>
               <div className="flex items-center gap-3 mt-3">
                 <Button
                   variant="outline"
@@ -387,6 +401,10 @@ export function PreferencesForm({ user }: PreferencesFormProps) {
     </div>
   );
 }
+
+
+
+
 
 
 
