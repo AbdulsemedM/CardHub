@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { User, Lock, Check, ArrowRight, Info, Building2, UserCircle } from 'lucide-react';
+import { User, Lock, Check, ArrowRight, Building2, UserCircle } from 'lucide-react';
 import { loginAdmin, loginBankStaff } from '@/lib/services/auth-service';
 
 export default function LoginPage() {
@@ -124,14 +124,16 @@ export default function LoginPage() {
         // Call backend directly for staff login
         const response = await loginBankStaff(username, password);
         
-        // Store session info for server-side auth
+        // Store session info for server-side auth (pass full user from backend)
         await fetch('/api/auth/staff-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            identifier: username, 
-            password,
-            token: response.token 
+            token: response.token,
+            username: response.username,
+            email: response.email,
+            fullName: response.fullName,
+            role: response.role,
           }),
         });
 
@@ -327,25 +329,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 rounded-lg bg-slate-50 border border-slate-200 p-4">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div className="flex-1 text-sm text-slate-700">
-                <p className="font-semibold mb-2">Demo Credentials:</p>
-                {loginType === 'staff' ? (
-                  <div className="space-y-1 text-xs">
-                    <p>Branch User: <span className="font-mono">jdoe</span> / any password</p>
-                    <p>Operations: <span className="font-mono">mchen</span> / any password</p>
-                    <p>Ops Head: <span className="font-mono">rwilson</span> / any password</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1 text-xs">
-                    <p>Admin: <span className="font-mono">admin</span> / any password</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

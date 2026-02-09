@@ -21,3 +21,19 @@ export async function getBranchList(): Promise<BranchListItem[]> {
     throw new Error(error.message || 'Failed to fetch branches');
   }
 }
+
+export async function getBranchById(branchListId: number): Promise<BranchListItem> {
+  try {
+    return await apiClient.get<BranchListItem>(`/api/v1/branch_lists/${branchListId}`);
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to fetch branch');
+  }
+}
+
+export async function deleteBranch(branchListId: number): Promise<void> {
+  try {
+    await apiClient.delete(`/api/v1/branch_lists/${branchListId}`);
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to delete branch');
+  }
+}

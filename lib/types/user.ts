@@ -53,11 +53,20 @@ export interface AdminLoginResponse {
   refresh_token: string;
 }
 
+export interface StaffLoginRequest {
+  identifier: string;
+  password: string;
+  modelId?: string;
+  modelName?: string;
+  deviceName?: string;
+  pushToken?: string;
+}
+
 export interface StaffLoginResponse {
   token: string;
   username: string;
   email: string;
-  fullName: string;
+  fullName?: string;
   role: StaffRole;
   message: string;
 }

@@ -7,55 +7,43 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { identifier, password, token } = body;
+    const { token, username, email, fullName, role } = body;
 
-    if (!identifier || !password) {
+    if (!token || !username) {
       return NextResponse.json(
-        { success: false, error: 'Identifier and password are required' },
+        { success: false, error: 'Token and username are required' },
         { status: 400 }
       );
     }
 
-    // If token is provided, it means frontend already authenticated with backend
-    // Just create the session cookie
-    if (token) {
-      // We'll need the full staff info from the token or passed separately
-      // For now, create a basic session
-      const session = {
-        user: {
-          id: identifier,
-          username: identifier,
-          email: identifier,
-          name: identifier,
-          role: 'branch_user', // This will be overridden by the actual role
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-        token,
-        expiresAt: Date.now() + SESSION_DURATION,
-        userType: 'bank_staff',
-      };
+    const session = {
+      user: {
+        staffId: 0,
+        username,
+        email: email || username,
+        fullName: fullName || username,
+        role: { roleId: 0, roleName: role || 'BRANCH_USER' },
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      },
+      token,
+      expiresAt: Date.now() + SESSION_DURATION,
+      userType: 'bank_staff',
+    };
 
-      const cookieStore = await cookies();
-      cookieStore.set(SESSION_COOKIE, JSON.stringify(session), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: SESSION_DURATION / 1000,
-      });
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, JSON.stringify(session), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: SESSION_DURATION / 1000,
+    });
 
-      return NextResponse.json({
-        success: true,
-        user: session.user,
-        userType: 'bank_staff',
-      });
-    }
-
-    // If no token, this is fallback/legacy behavior
-    return NextResponse.json(
-      { success: false, error: 'Invalid request' },
-      { status: 400 }
-    );
+    return NextResponse.json({
+      success: true,
+      user: session.user,
+      userType: 'bank_staff',
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || 'Login failed' },

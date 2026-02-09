@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Bell, LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { logout } from '@/lib/services/auth-service';
 
 const roleLabels: Record<string, string> = {
   branch_officer: 'Branch Officer',
@@ -36,7 +37,8 @@ export function Header({ user }: { user: User | BankStaff }) {
   const display = getDisplayUser(user);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await logout(); // Backend logout + clear localStorage
+    await fetch('/api/auth/logout', { method: 'POST' }); // Clear session cookie
     router.push('/login');
     router.refresh();
   };

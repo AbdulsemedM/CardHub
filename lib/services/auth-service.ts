@@ -1,5 +1,5 @@
 import { apiClient } from './api-client';
-import type { AdminLoginResponse, StaffLoginResponse } from '../types/user';
+import type { AdminLoginResponse, StaffLoginRequest, StaffLoginResponse } from '../types/user';
 
 export async function loginAdmin(
   username: string,
@@ -24,13 +24,12 @@ export async function loginAdmin(
 
 export async function loginBankStaff(
   identifier: string,
-  password: string
+  password: string,
+  deviceInfo?: Pick<StaffLoginRequest, 'modelId' | 'modelName' | 'deviceName' | 'pushToken'>
 ): Promise<StaffLoginResponse> {
   try {
-    const response = await apiClient.post<StaffLoginResponse>('/api/v1/auth/ldap-login', {
-      identifier,
-      password,
-    });
+    const body: StaffLoginRequest = { identifier, password, ...deviceInfo };
+    const response = await apiClient.post<StaffLoginResponse>('/api/v1/auth/ldap-login', body);
 
     if (typeof window !== 'undefined') {
       localStorage.setItem('staff_token', response.token);
@@ -46,10 +45,19 @@ export async function loginBankStaff(
 
 export async function logout(): Promise<void> {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('staff_token');
-    localStorage.removeItem('user_type');
-    localStorage.removeItem('user_role');
+    try {
+      const token = getStoredToken();
+      if (token) {
+        await apiClient.post('/api/v1/auth/logout', undefined);
+      }
+    } catch {
+      // Continue with local cleanup even if backend logout fails
+    } finally {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('staff_token');
+      localStorage.removeItem('user_type');
+      localStorage.removeItem('user_role');
+    }
   }
 }
 
