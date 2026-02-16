@@ -1,10 +1,12 @@
 import { apiClient } from './api-client';
 import type {
   BankStaff,
+  CreateRoleRequest,
   InitializeAdminRequest,
   InitializeAdminResponse,
   RegisterStaffRequest,
   RegisterStaffResponse,
+  Role,
   UpdateStaffRequest,
 } from '../types/user';
 
@@ -85,5 +87,24 @@ export async function deactivateBankStaff(staffId: number): Promise<{
     return await apiClient.delete(`/api/v1/admin/bank-staff/${staffId}`);
   } catch (error: any) {
     throw new Error(error.message || 'Failed to deactivate bank staff');
+  }
+}
+
+// Get all roles (admin only) - required before registering staff
+export async function getAllRoles(): Promise<Role[]> {
+  try {
+    const data = await apiClient.get<unknown>('/api/v1/roles');
+    return normalizeToArray<Role>(data);
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to fetch roles');
+  }
+}
+
+// Create a role (admin only) - e.g. BRANCH_USER, BRANCH, OPERATIONS, OPERATIONS_HEAD, CARD_ISSUANCE, PRINTING
+export async function createRole(data: CreateRoleRequest): Promise<Role> {
+  try {
+    return await apiClient.post<Role>('/api/v1/roles', data);
+  } catch (error: any) {
+    throw new Error(error.message || 'Failed to create role');
   }
 }

@@ -88,6 +88,7 @@ export async function requireAuth(): Promise<User | BankStaff> {
 // Map StaffRole to UserRole for role checks
 const STAFF_ROLE_TO_USER_ROLE: Record<string, UserRole> = {
   BRANCH_USER: 'branch_officer',
+  BRANCH: 'branch_officer',
   OPERATIONS: 'operations',
   OPERATIONS_HEAD: 'ops_head',
   ADMIN: 'admin',

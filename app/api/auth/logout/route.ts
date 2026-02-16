@@ -18,9 +18,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Call backend to invalidate token
+    // Call backend to invalidate token (TEMPORARY: hardcoded test URL for testing)
     if (token) {
-      const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://cardhub.coopbankoromiasc.com';
+      // Production: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://cardhub.coopbankoromiasc.com'
+      const backendUrl = 'https://1jrrz730-8041.uks1.devtunnels.ms';
       await fetch(`${backendUrl}/api/v1/auth/logout`, {
         method: 'POST',
         headers: {

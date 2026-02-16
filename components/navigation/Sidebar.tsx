@@ -37,6 +37,7 @@ function normalizeRole(role: string): string {
   // Handle both legacy and new role formats
   const roleMap: Record<string, string> = {
     'branch_officer': 'BRANCH_USER',
+    'branch': 'BRANCH',
     'operations': 'OPERATIONS',
     'ops_head': 'OPERATIONS_HEAD',
     'admin': 'ADMIN',
@@ -63,6 +64,12 @@ function getNavItems(userRole: string): NavItem[] {
         roles: ['ADMIN'],
       },
       {
+        title: 'Roles',
+        href: '/admin/roles',
+        icon: Shield,
+        roles: ['ADMIN'],
+      },
+      {
         title: 'Audit Logs',
         href: '/admin/audit-logs',
         icon: FileText,
@@ -71,26 +78,26 @@ function getNavItems(userRole: string): NavItem[] {
     ];
   }
   
-  // Branch User menu
-  if (normalized === 'BRANCH_USER') {
+  // Branch User / Branch menu (same nav)
+  if (normalized === 'BRANCH_USER' || normalized === 'BRANCH') {
     return [
       {
         title: 'Dashboard',
         href: '/dashboard',
         icon: LayoutDashboard,
-        roles: ['BRANCH_USER'],
+        roles: ['BRANCH_USER', 'BRANCH'],
       },
       {
         title: 'Pending Reviews',
         href: '/requests',
         icon: FolderOpen,
-        roles: ['BRANCH_USER'],
+        roles: ['BRANCH_USER', 'BRANCH'],
       },
       {
         title: 'Reports',
         href: '/reports',
         icon: BarChart3,
-        roles: ['BRANCH_USER'],
+        roles: ['BRANCH_USER', 'BRANCH'],
       },
     ];
   }
@@ -219,7 +226,7 @@ const settingsItems: NavItem[] = [
     title: 'Preferences',
     href: '/preferences',
     icon: Settings,
-    roles: ['BRANCH_USER', 'OPERATIONS', 'OPERATIONS_HEAD', 'CARD_ISSUANCE', 'PRINTING', 'ADMIN'],
+    roles: ['BRANCH_USER', 'BRANCH', 'OPERATIONS', 'OPERATIONS_HEAD', 'CARD_ISSUANCE', 'PRINTING', 'ADMIN'],
   },
 ];
 

@@ -80,6 +80,7 @@ export function UserTable() {
 
   const roleLabels: Record<string, string> = {
     BRANCH_USER: 'Branch User',
+    BRANCH: 'Branch',
     OPERATIONS: 'Operations',
     OPERATIONS_HEAD: 'Operations Head',
     CARD_ISSUANCE: 'Card Issuance',

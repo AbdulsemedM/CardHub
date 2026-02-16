@@ -1,7 +1,8 @@
 'use client';
 
-// API Client - always uses production backend URL directly
-const PRODUCTION_BASE_URL = 'https://cardhub.coopbankoromiasc.com';
+// API Client - TEMPORARY: force dev tunnel for testing (overrides env so deployed site uses it)
+// const PRODUCTION_BASE_URL = 'https://cardhub.coopbankoromiasc.com';
+const TEST_BASE_URL = 'https://1jrrz730-8041.uks1.devtunnels.ms';
 
 export interface ApiError {
   message: string;
@@ -13,7 +14,8 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || PRODUCTION_BASE_URL;
+    // Use test URL for now; restore: process.env.NEXT_PUBLIC_API_BASE_URL || PRODUCTION_BASE_URL
+    this.baseURL = TEST_BASE_URL;
   }
 
   private getUrl(endpoint: string): string {
@@ -34,12 +36,24 @@ class ApiClient {
     return null;
   }
 
+  private clearAuthAndRedirectToLogin(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('staff_token');
+    localStorage.removeItem('user_type');
+    localStorage.removeItem('user_role');
+    window.location.href = '/api/auth/session-expired';
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage = 'An error occurred';
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
+        errorMessage = (errorData as Record<string, string>).error_message
+          ?? (errorData as Record<string, string>).message
+          ?? (errorData as Record<string, string>).error
+          ?? errorMessage;
       } catch {
         errorMessage = response.statusText || errorMessage;
       }
@@ -48,6 +62,11 @@ class ApiClient {
         message: errorMessage,
         status: response.status,
       };
+
+      // 401 Unauthorized (e.g. token expired): clear auth and redirect to login
+      if (response.status === 401) {
+        this.clearAuthAndRedirectToLogin();
+      }
 
       throw error;
     }

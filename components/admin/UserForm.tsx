@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { BankStaff, StaffRole } from '@/lib/types/user';
 import type { BranchListItem } from '@/lib/types/branch';
-import { registerBankStaff, updateBankStaff } from '@/lib/services/admin-service';
+import { registerBankStaff, updateBankStaff, getAllRoles } from '@/lib/services/admin-service';
 import { getBranchList } from '@/lib/services/branch-list-service';
 import { toast } from 'sonner';
 
@@ -18,17 +18,34 @@ interface UserFormProps {
 
 export function UserForm({ staff, onSuccess, onCancel }: UserFormProps) {
   const [loading, setLoading] = useState(false);
+  const [roles, setRoles] = useState<{ roleId: number; roleName: string; description?: string }[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
   const [branches, setBranches] = useState<BranchListItem[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(true);
   const [formData, setFormData] = useState({
     email: staff?.email || '',
     username: staff?.username || '',
     fullName: staff?.fullName || '',
-    roleName: staff?.role.roleName || 'BRANCH_USER' as StaffRole,
+    roleName: staff?.role.roleName || '',
     branchName: staff?.branchName || '',
     branchCode: staff?.branchCode || '',
     isActive: staff?.isActive ?? true,
   });
+
+  useEffect(() => {
+    getAllRoles()
+      .then((data) => setRoles(Array.isArray(data) ? data : []))
+      .catch(() => toast.error('Failed to load roles'))
+      .finally(() => setRolesLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (staff) {
+      setFormData((prev) => ({ ...prev, roleName: staff.role.roleName }));
+    } else if (roles.length > 0) {
+      setFormData((prev) => ({ ...prev, roleName: prev.roleName || roles[0].roleName }));
+    }
+  }, [staff, roles]);
 
   useEffect(() => {
     if (!staff) {
@@ -49,7 +66,7 @@ export function UserForm({ staff, onSuccess, onCancel }: UserFormProps) {
       if (staff) {
         // Update existing staff
         await updateBankStaff(staff.staffId, {
-          roleName: formData.roleName,
+          roleName: formData.roleName as StaffRole,
           fullName: formData.fullName,
           isActive: formData.isActive,
         });
@@ -59,7 +76,7 @@ export function UserForm({ staff, onSuccess, onCancel }: UserFormProps) {
         await registerBankStaff({
           email: formData.email,
           username: formData.username,
-          roleName: formData.roleName,
+          roleName: formData.roleName as StaffRole,
           fullName: formData.fullName || undefined,
           branchName: formData.branchName || undefined,
           branchCode: formData.branchCode || undefined,
@@ -136,18 +153,23 @@ export function UserForm({ staff, onSuccess, onCancel }: UserFormProps) {
         <select
           id="role"
           value={formData.roleName}
-          onChange={(e) => setFormData({ ...formData, roleName: e.target.value as StaffRole })}
+          onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
           className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
           required
-          disabled={loading}
+          disabled={loading || rolesLoading}
         >
-          <option value="BRANCH_USER">Branch User</option>
-          <option value="OPERATIONS">Operations</option>
-          <option value="OPERATIONS_HEAD">Operations Head</option>
-          <option value="CARD_ISSUANCE">Card Issuance</option>
-          <option value="PRINTING">Printing</option>
-          <option value="ADMIN">Admin</option>
+          <option value="">{rolesLoading ? 'Loading roles...' : 'Select a role'}</option>
+          {roles.map((r) => (
+            <option key={r.roleId} value={r.roleName}>
+              {r.roleName}
+            </option>
+          ))}
         </select>
+        {!rolesLoading && roles.length === 0 && (
+          <p className="text-xs text-amber-600">
+            No roles yet. Create roles in Admin → Roles first.
+          </p>
+        )}
       </div>
 
       {!isEditing && (

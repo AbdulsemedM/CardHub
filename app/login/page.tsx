@@ -16,6 +16,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const IMAGES = ['/images/traveller.jpg', '/images/card.jpg'];
+  const SHUFFLE_INTERVAL_MS = 6000;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % IMAGES.length);
+    }, SHUFFLE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 
   // Check if user is already logged in and redirect to dashboard
   useEffect(() => {
@@ -141,7 +152,7 @@ export default function LoginPage() {
         
         // Route based on staff role
         const role = response.role;
-        if (role === 'BRANCH_USER') {
+        if (role === 'BRANCH_USER' || role === 'BRANCH') {
           router.push('/requests');
         } else if (role === 'OPERATIONS') {
           router.push('/operations');
@@ -174,46 +185,68 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Panel - Informational */}
-      <div className="hidden md:flex md:w-1/2 flex-col justify-between p-12 text-white" style={{ background: 'linear-gradient(to bottom right, rgb(4, 182, 253), rgb(4, 182, 253) 90%, rgb(0, 173, 239))' }}>
-        <div>
-          <div className="flex items-center gap-3 mb-16">
-            <Image
-              src="/images/WhiteLogo.png"
-              alt="TravelCard Sys"
-              width={40}
-              height={40}
-              className="object-contain"
-            />
-            <span className="text-xl font-semibold">TravelCard Sys</span>
-          </div>
-          
-          <div className="max-w-md">
-            <h1 className="text-4xl font-bold mb-8 leading-tight">
-              Empowering corporate travel with seamless approvals.
-            </h1>
+      <div className="hidden md:flex md:w-1/2 relative overflow-hidden flex-col justify-between p-12 text-white">
+        {/* Background images with crossfade */}
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${IMAGES[0]})`,
+              opacity: activeIndex === 0 ? 1 : 0,
+            }}
+          />
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${IMAGES[1]})`,
+              opacity: activeIndex === 1 ? 1 : 0,
+            }}
+          />
+        </div>
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-black/40" />
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between flex-1">
+          <div>
+            <div className="flex items-center gap-3 mb-16">
+              <Image
+                src="/images/WhiteLogo.png"
+                alt="TravelCard Sys"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-xl font-semibold">TravelCard Sys</span>
+            </div>
             
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
-                <p className="text-lg">Multi-stage approval workflows</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
-                <p className="text-lg">Real-time expense tracking</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
-                <p className="text-lg">Enterprise-grade security</p>
+            <div className="max-w-md">
+              <h1 className="text-4xl font-bold mb-8 leading-tight">
+                Empowering corporate travel with seamless approvals.
+              </h1>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
+                  <p className="text-lg">Multi-stage approval workflows</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
+                  <p className="text-lg">Real-time expense tracking</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-6 w-6 flex-shrink-0 mt-0.5" />
+                  <p className="text-lg">Enterprise-grade security</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between text-sm text-white/80">
-          <span>© 2024 Travel Card Systems Inc.</span>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
+          <div className="flex items-center justify-between text-sm text-white/80">
+            <span>© 2024 Travel Card Systems Inc.</span>
+            <div className="flex gap-4">
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+            </div>
           </div>
         </div>
       </div>

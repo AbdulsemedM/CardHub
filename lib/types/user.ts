@@ -1,8 +1,8 @@
 // Legacy roles (kept for backward compatibility)
 export type UserRole = 'branch_officer' | 'operations' | 'ops_head' | 'admin';
 
-// New API-aligned roles for bank staff
-export type StaffRole = 'BRANCH_USER' | 'OPERATIONS' | 'OPERATIONS_HEAD' | 'CARD_ISSUANCE' | 'PRINTING' | 'ADMIN';
+// New API-aligned roles for bank staff (accepted when registering: BRANCH_USER, BRANCH, OPERATIONS, OPERATIONS_HEAD, CARD_ISSUANCE, PRINTING)
+export type StaffRole = 'BRANCH_USER' | 'BRANCH' | 'OPERATIONS' | 'OPERATIONS_HEAD' | 'CARD_ISSUANCE' | 'PRINTING' | 'ADMIN';
 
 export interface User {
   id: string;
@@ -116,5 +116,19 @@ export interface AuthSession {
   token: string;
   expiresAt: number;
   userType: 'admin' | 'bank_staff';
+}
+
+// Role (from GET/POST /api/v1/roles) - admin only
+export interface Role {
+  roleId: number;
+  roleName: string;
+  description?: string;
+  registeredAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateRoleRequest {
+  roleName: string;
+  description?: string;
 }
 

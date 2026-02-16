@@ -15,6 +15,7 @@ const roleLabels: Record<string, string> = {
   ops_head: 'Approver',
   admin: 'Admin',
   BRANCH_USER: 'Branch User',
+  BRANCH: 'Branch',
   OPERATIONS: 'Operations',
   OPERATIONS_HEAD: 'Operations Head',
   CARD_ISSUANCE: 'Card Issuance',
